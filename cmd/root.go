@@ -21,6 +21,8 @@ var (
 	flagWhy       bool
 	flagClipboard bool
 	flagLang      string
+
+	totalTokensUsed int
 )
 
 var rootCmd = &cobra.Command{
@@ -83,19 +85,23 @@ func runCommit(cmd *cobra.Command, args []string) error {
 
 	fmt.Println(cyan("🤖 Generating commit message..."))
 
-	message, err := internal.GenerateCommitMessage(cfg, diff)
+	result, err := internal.GenerateCommitMessage(cfg, diff)
 	if err != nil {
 		return err
 	}
 
+	totalTokensUsed += result.TotalTokens
+	gray := color.New(color.FgHiBlack).SprintFunc()
+
 	fmt.Println()
 	fmt.Println(green("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"))
-	fmt.Println(message)
+	fmt.Println(result.Message)
 	fmt.Println(green("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"))
+	fmt.Println(gray(fmt.Sprintf("Tokens: %d (total: %d)", result.TotalTokens, totalTokensUsed)))
 	fmt.Println()
 
 	if flagClipboard {
-		if err := internal.CopyToClipboard(message); err != nil {
+		if err := internal.CopyToClipboard(result.Message); err != nil {
 			return fmt.Errorf("failed to copy to clipboard: %w", err)
 		}
 		fmt.Println(green("📋 Copied to clipboard!"))
@@ -103,7 +109,7 @@ func runCommit(cmd *cobra.Command, args []string) error {
 	}
 
 	if flagYes {
-		return doCommit(message)
+		return doCommit(result.Message)
 	}
 
 	fmt.Printf("%s [Y]es / [n]o / [r]etry / [e]dit: ", yellow("Commit?"))
@@ -113,11 +119,11 @@ func runCommit(cmd *cobra.Command, args []string) error {
 
 	switch input {
 	case "", "y", "yes":
-		return doCommit(message)
+		return doCommit(result.Message)
 	case "r", "retry":
 		return runCommit(cmd, args)
 	case "e", "edit":
-		return commitWithEditor(message)
+		return commitWithEditor(result.Message)
 	default:
 		fmt.Println("Commit cancelled.")
 		return nil

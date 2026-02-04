@@ -15,9 +15,16 @@ const (
 	apiTimeout    = 60 * time.Second
 )
 
-func GenerateCommitMessage(cfg *Config, diff string) (string, error) {
+type GenerateResult struct {
+	Message          string
+	PromptTokens     int
+	CompletionTokens int
+	TotalTokens      int
+}
+
+func GenerateCommitMessage(cfg *Config, diff string) (*GenerateResult, error) {
 	if cfg.APIKey == "" {
-		return "", fmt.Errorf("API key not set. Run: gcommit config set api_key <your-key>")
+		return nil, fmt.Errorf("API key not set. Run: gcommit config set api_key <your-key>")
 	}
 
 	// 限制 diff 大小
@@ -52,14 +59,19 @@ func GenerateCommitMessage(cfg *Config, diff string) (string, error) {
 	)
 
 	if err != nil {
-		return "", fmt.Errorf("OpenAI API error: %w", err)
+		return nil, fmt.Errorf("OpenAI API error: %w", err)
 	}
 
 	if len(resp.Choices) == 0 {
-		return "", fmt.Errorf("no response from OpenAI")
+		return nil, fmt.Errorf("no response from OpenAI")
 	}
 
-	return cleanMessage(resp.Choices[0].Message.Content), nil
+	return &GenerateResult{
+		Message:          cleanMessage(resp.Choices[0].Message.Content),
+		PromptTokens:     resp.Usage.PromptTokens,
+		CompletionTokens: resp.Usage.CompletionTokens,
+		TotalTokens:      resp.Usage.TotalTokens,
+	}, nil
 }
 
 func cleanMessage(msg string) string {
