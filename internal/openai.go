@@ -5,8 +5,14 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/sashabaranov/go-openai"
+)
+
+const (
+	maxDiffLength = 8000 // 限制 diff 大小避免超過 token 限制
+	apiTimeout    = 60 * time.Second
 )
 
 func GenerateCommitMessage(cfg *Config, diff string) (string, error) {
@@ -14,12 +20,20 @@ func GenerateCommitMessage(cfg *Config, diff string) (string, error) {
 		return "", fmt.Errorf("API key not set. Run: gcommit config set api_key <your-key>")
 	}
 
+	// 限制 diff 大小
+	if len(diff) > maxDiffLength {
+		diff = diff[:maxDiffLength] + "\n... (truncated)"
+	}
+
 	client := openai.NewClient(cfg.APIKey)
 
 	prompt := buildPrompt(cfg, diff)
 
+	ctx, cancel := context.WithTimeout(context.Background(), apiTimeout)
+	defer cancel()
+
 	resp, err := client.CreateChatCompletion(
-		context.Background(),
+		ctx,
 		openai.ChatCompletionRequest{
 			Model: cfg.Model,
 			Messages: []openai.ChatCompletionMessage{
@@ -100,6 +114,11 @@ Add a relevant gitmoji at the start:
 	}
 
 	prompt += fmt.Sprintf("\nKeep the first line under %d characters.", cfg.MaxLength)
+
+	if cfg.Why {
+		prompt += "\nAfter the commit message, add a blank line and then 'Why: ' followed by a brief explanation of why these changes were made."
+	}
+
 	prompt += "\nDo NOT wrap the message in markdown code blocks or backticks. Output plain text only."
 
 	return prompt

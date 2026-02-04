@@ -12,6 +12,7 @@ type Config struct {
 	Model        string `yaml:"model"`
 	Conventional bool   `yaml:"conventional"`
 	GitMoji      bool   `yaml:"gitmoji"`
+	Why          bool   `yaml:"why"`
 	Language     string `yaml:"language"`
 	MaxLength    int    `yaml:"max_length"`
 }

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"os/exec"
 	"strings"
 )
@@ -52,5 +53,9 @@ func GetStagedFiles() ([]string, error) {
 
 func Commit(message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)
-	return cmd.Run()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(output)))
+	}
+	return nil
 }

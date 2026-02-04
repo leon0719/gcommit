@@ -60,6 +60,8 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		cfg.Conventional = value == "true"
 	case "gitmoji":
 		cfg.GitMoji = value == "true"
+	case "why":
+		cfg.Why = value == "true"
 	case "max_length":
 		var n int
 		if _, err := fmt.Sscanf(value, "%d", &n); err != nil {
@@ -98,6 +100,8 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 		value = fmt.Sprintf("%v", cfg.Conventional)
 	case "gitmoji":
 		value = fmt.Sprintf("%v", cfg.GitMoji)
+	case "why":
+		value = fmt.Sprintf("%v", cfg.Why)
 	case "max_length":
 		value = fmt.Sprintf("%d", cfg.MaxLength)
 	default:
@@ -119,6 +123,7 @@ func runConfigList(cmd *cobra.Command, args []string) error {
 		Model        string `yaml:"model"`
 		Conventional bool   `yaml:"conventional"`
 		GitMoji      bool   `yaml:"gitmoji"`
+		Why          bool   `yaml:"why"`
 		Language     string `yaml:"language"`
 		MaxLength    int    `yaml:"max_length"`
 	}{
@@ -126,6 +131,7 @@ func runConfigList(cmd *cobra.Command, args []string) error {
 		Model:        cfg.Model,
 		Conventional: cfg.Conventional,
 		GitMoji:      cfg.GitMoji,
+		Why:          cfg.Why,
 		Language:     cfg.Language,
 		MaxLength:    cfg.MaxLength,
 	}

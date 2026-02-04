@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"gcommit/internal"
@@ -13,10 +15,12 @@ import (
 )
 
 var (
-	flagYes     bool
-	flagEdit    bool
-	flagGitMoji bool
-	flagLang    string
+	flagYes       bool
+	flagEdit      bool
+	flagGitMoji   bool
+	flagWhy       bool
+	flagClipboard bool
+	flagLang      string
 )
 
 var rootCmd = &cobra.Command{
@@ -33,7 +37,9 @@ func Execute() error {
 func init() {
 	rootCmd.Flags().BoolVarP(&flagYes, "yes", "y", false, "Commit directly without confirmation")
 	rootCmd.Flags().BoolVarP(&flagEdit, "edit", "e", false, "Open editor after generating message")
+	rootCmd.Flags().BoolVarP(&flagClipboard, "clipboard", "c", false, "Copy message to clipboard instead of committing")
 	rootCmd.Flags().BoolVar(&flagGitMoji, "gitmoji", false, "Add gitmoji to commit message")
+	rootCmd.Flags().BoolVar(&flagWhy, "why", false, "Include explanation of why changes were made")
 	rootCmd.Flags().StringVar(&flagLang, "lang", "", "Language for commit message (en, zh-TW, zh-CN, ja)")
 }
 
@@ -45,6 +51,9 @@ func runCommit(cmd *cobra.Command, args []string) error {
 
 	if flagGitMoji {
 		cfg.GitMoji = true
+	}
+	if flagWhy {
+		cfg.Why = true
 	}
 	if flagLang != "" {
 		cfg.Language = flagLang
@@ -58,10 +67,10 @@ func runCommit(cmd *cobra.Command, args []string) error {
 
 	diff, err := internal.GetStagedDiff()
 	if err != nil {
-		if err == internal.ErrNoStagedChanges {
+		if errors.Is(err, internal.ErrNoStagedChanges) {
 			return fmt.Errorf("no staged changes. Use 'git add' first")
 		}
-		if err == internal.ErrNotGitRepo {
+		if errors.Is(err, internal.ErrNotGitRepo) {
 			return fmt.Errorf("not a git repository")
 		}
 		return err
@@ -84,6 +93,14 @@ func runCommit(cmd *cobra.Command, args []string) error {
 	fmt.Println(message)
 	fmt.Println(green("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"))
 	fmt.Println()
+
+	if flagClipboard {
+		if err := internal.CopyToClipboard(message); err != nil {
+			return fmt.Errorf("failed to copy to clipboard: %w", err)
+		}
+		fmt.Println(green("📋 Copied to clipboard!"))
+		return nil
+	}
 
 	if flagYes {
 		return doCommit(message)
@@ -135,7 +152,7 @@ func commitWithEditor(message string) error {
 		editor = "vim"
 	}
 
-	cmd := newEditorCmd(editor, tmpfile.Name())
+	cmd := exec.Command(editor, tmpfile.Name())
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
