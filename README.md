@@ -41,9 +41,38 @@ gcommit
 # Options
 gcommit -y           # Commit directly without confirmation
 gcommit -e           # Open editor to modify message
+gcommit -c           # Copy message to clipboard (no commit)
 gcommit --gitmoji    # Add emoji to commit message
+gcommit --why        # Include explanation of why changes were made
 gcommit --lang zh-TW # Generate message in Traditional Chinese
 ```
+
+## Features
+
+### Token Usage Display
+
+Each generation shows token consumption:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+feat(auth): add login endpoint
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tokens: 245 (total: 245)
+```
+
+When using retry, total tokens accumulate:
+
+```
+Tokens: 238 (total: 483)
+```
+
+### Interactive Options
+
+After generating a message, you can:
+- `Y` - Commit with the generated message
+- `n` - Cancel
+- `r` - Retry (generate a new message)
+- `e` - Edit the message before committing
 
 ## Configuration
 
@@ -68,6 +97,7 @@ gcommit config get <key>
 | `model` | `gpt-4o-mini` | GPT model to use |
 | `conventional` | `true` | Use Conventional Commits format |
 | `gitmoji` | `false` | Add gitmoji to messages |
+| `why` | `false` | Include why explanation |
 | `language` | `en` | Message language (en, zh-TW, zh-CN, ja) |
 | `max_length` | `72` | Max length for commit title |
 
