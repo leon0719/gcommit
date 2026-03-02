@@ -51,6 +51,40 @@ func GetStagedFiles() ([]string, error) {
 	return strings.Split(lines, "\n"), nil
 }
 
+func GetBranchDiff(base string) (string, error) {
+	if !IsGitRepo() {
+		return "", ErrNotGitRepo
+	}
+
+	cmd := exec.Command("git", "diff", base+"...HEAD", "--no-color")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to diff against %s: %s", base, strings.TrimSpace(string(output)))
+	}
+
+	diff := strings.TrimSpace(string(output))
+	if diff == "" {
+		return "", fmt.Errorf("no differences found between %s and HEAD", base)
+	}
+
+	return diff, nil
+}
+
+func GetBranchFiles(base string) ([]string, error) {
+	cmd := exec.Command("git", "diff", base+"...HEAD", "--name-only")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.TrimSpace(string(output))
+	if lines == "" {
+		return nil, nil
+	}
+
+	return strings.Split(lines, "\n"), nil
+}
+
 func Commit(message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)
 	output, err := cmd.CombinedOutput()
