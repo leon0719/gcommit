@@ -95,6 +95,14 @@ func TestGetReviewSystemPrompt(t *testing.T) {
 	}
 }
 
+func TestGenerateReview_NoAPIKey(t *testing.T) {
+	cfg := &Config{APIKey: "", Model: "gpt-4o-mini", Language: "en"}
+	_, err := GenerateReview(cfg, "some diff")
+	if err == nil {
+		t.Fatal("expected error for empty API key, got nil")
+	}
+}
+
 func containsSubstr(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {

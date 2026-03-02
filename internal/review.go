@@ -1,10 +1,13 @@
 package internal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/sashabaranov/go-openai"
 )
 
 type ReviewIssue struct {
@@ -94,4 +97,71 @@ Rules:
 
 func BuildReviewPrompt(diff string) string {
 	return fmt.Sprintf("Review the following code changes:\n\n%s", diff)
+}
+
+type ReviewAPIResult struct {
+	Review           *ReviewResult
+	RawResponse      string
+	PromptTokens     int
+	CompletionTokens int
+	TotalTokens      int
+}
+
+func GenerateReview(cfg *Config, diff string) (*ReviewAPIResult, error) {
+	if cfg.APIKey == "" {
+		return nil, fmt.Errorf("API key not set. Run: gcommit config set api_key <your-key>")
+	}
+
+	if len(diff) > maxDiffLength {
+		diff = diff[:maxDiffLength] + "\n... (truncated)"
+	}
+
+	client := openai.NewClient(cfg.APIKey)
+
+	ctx, cancel := context.WithTimeout(context.Background(), apiTimeout)
+	defer cancel()
+
+	resp, err := client.CreateChatCompletion(
+		ctx,
+		openai.ChatCompletionRequest{
+			Model: cfg.Model,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: GetReviewSystemPrompt(cfg),
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: BuildReviewPrompt(diff),
+				},
+			},
+			Temperature: 0.3,
+			MaxTokens:   2000,
+		},
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("OpenAI API error: %w", err)
+	}
+
+	if len(resp.Choices) == 0 {
+		return nil, fmt.Errorf("no response from OpenAI")
+	}
+
+	raw := resp.Choices[0].Message.Content
+
+	result := &ReviewAPIResult{
+		RawResponse:      raw,
+		PromptTokens:     resp.Usage.PromptTokens,
+		CompletionTokens: resp.Usage.CompletionTokens,
+		TotalTokens:      resp.Usage.TotalTokens,
+	}
+
+	parsed, err := ParseReviewResponse(raw)
+	if err != nil {
+		return result, nil
+	}
+
+	result.Review = parsed
+	return result, nil
 }
