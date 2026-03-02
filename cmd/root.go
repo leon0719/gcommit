@@ -27,7 +27,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "gcommit",
-	Short: "AI-powered git commit message generator",
+	Short: "AI-powered git commit message generator and code reviewer",
 	Long:  "Generate meaningful git commit messages using GPT",
 	RunE:  runCommit,
 }
