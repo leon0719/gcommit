@@ -1,6 +1,6 @@
 # gcommit
 
-AI-powered git commit message generator using GPT.
+AI-powered git commit message generator and code reviewer using GPT.
 
 ## Installation
 
@@ -47,7 +47,52 @@ gcommit --why        # Include explanation of why changes were made
 gcommit --lang zh-TW # Generate message in Traditional Chinese
 ```
 
+### Code Review
+
+```bash
+# Review staged changes
+gcommit review
+
+# Review branch diff against main
+gcommit review --branch main
+
+# Review in Traditional Chinese
+gcommit review --lang zh-TW
+```
+
 ## Features
+
+### Code Review
+
+Reviews are categorized by severity:
+
+```
+🔍 Reviewing staged changes...
+📁 Files: internal/handler.go, internal/db.go
+🤖 Analyzing with gpt-4o-mini...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 Summary
+Overall quality is good with 2 issues to address.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔴 Bug (1)
+  internal/handler.go:45
+  nil pointer dereference - user may be nil
+
+🔴 Security (1)
+  internal/db.go:102
+  SQL injection risk in raw query
+
+🔵 Suggestion (1)
+  cmd/root.go:23
+  Consider extracting retry logic into a helper
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tokens: 1,203 (prompt: 980, completion: 223)
+```
+
+Categories: Bug, Security, Performance, Style, Suggestion
 
 ### Token Usage Display
 
