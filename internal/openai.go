@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	maxDiffLength = 8000 // 限制 diff 大小避免超過 token 限制
+	maxDiffLength = 8000
 	apiTimeout    = 60 * time.Second
 )
 
@@ -27,7 +27,6 @@ func GenerateCommitMessage(cfg *Config, diff string) (*GenerateResult, error) {
 		return nil, fmt.Errorf("API key not set. Run: gcommit config set api_key <your-key>")
 	}
 
-	// 限制 diff 大小
 	if len(diff) > maxDiffLength {
 		diff = diff[:maxDiffLength] + "\n... (truncated)"
 	}
